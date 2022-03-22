@@ -32,7 +32,7 @@ spec:
       - image: minio/minio
         name: minio
         command:
-        - mc
+        - minio
         args:
         - server
         - /data
