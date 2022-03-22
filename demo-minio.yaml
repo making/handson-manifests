@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-minio
+  labels:
+    app: demo-minio
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-minio
+  labels:
+    app: demo-minio
+spec:
+  selector:
+    matchLabels:
+      app: demo-minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: demo-minio
+    spec:
+      containers:
+      - image: minio/minio
+        name: minio
+        command:
+        - mc
+        args:
+        - server
+        - /data
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: demo-minio
+              key: username
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: demo-minio
+              key: password
+        ports:
+        - containerPort: 9000
+          name: demo-minio
+        volumeMounts:
+        - name: demo-minio
+          mountPath: /data
+      volumes:
+      - name: demo-minio
+        persistentVolumeClaim:
+          claimName: demo-minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-minio
+  labels:
+    app: demo-minio
+spec:
+  ports:
+  - port: 9000
+  selector:
+    app: demo-minio
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-minio 
+  labels:
+    app: demo-minio
+stringData:
+  username: minio
+  password: minio123
